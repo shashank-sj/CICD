@@ -1,0 +1,72 @@
+apiVersion: tekton.dev/v1beta1
+kind: Pipeline
+metadata:
+  name: my-pipeline
+spec:
+  workspaces:
+    - name: shared-workspace
+  tasks:
+    - name: fetch-repository
+      taskRef:
+        name: git-clone
+      workspaces:
+        - name: output
+          workspace: shared-workspace
+      params:
+        - name: url
+          value: https://github.com/shashank-sj/CICD
+        - name: subdirectory
+          value: ""
+        - name: deleteExisting
+          value: "true"
+    - name: run-lint
+      taskRef:
+        name: golangci-lint
+      runAfter:
+        - fetch-repository
+      workspaces:
+        - name: source
+          workspace: shared-workspace
+      params:
+        - name: package
+          value: cicd
+        - name: flags
+          value: --disable-all --enable=errcheck
+    - name: run-test
+      taskRef:
+        name: golang-test
+      runAfter:
+        - fetch-repository
+      workspaces:
+        - name: source
+          workspace: shared-workspace
+      params:
+        - name: package
+          value: cicd
+    - name: run-build
+      taskRef:
+        name: golang-build
+      runAfter:
+        - run-lint
+        - run-test
+      workspaces:
+        - name: source
+          workspace: shared-workspace
+      params:
+        - name: package
+          value: cicd
+        - name: packages
+          value: "./"
+
+---
+apiVersion: tekton.dev/v1beta1
+kind: PipelineRun
+metadata:
+  name: my-pipeline-run
+spec:
+  pipelineRef:
+    name: my-pipeline
+  workspaces:
+    - name: shared-workspace
+      persistentvolumeclaim:
+        claimName: source-pvc
