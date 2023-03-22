@@ -16,6 +16,11 @@ func Test_sum(t *testing.T) {
 			args: args{1, 2},
 			want: 3,
 		},
+		{
+			name: "more",
+			args: args{3, 4},
+			want: 7,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
